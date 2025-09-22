@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataStore>
+  <id>fra_postgres</id>
+  <name>fra_postgres</name>
+  <description>PostgreSQL database connection for FRA data</description>
+  <type>PostGIS</type>
+  <enabled>true</enabled>
+  <workspace>
+    <id>fra_workspace</id>
+  </workspace>
+  <connectionParameters>
+    <entry key="host">postgres</entry>
+    <entry key="port">5432</entry>
+    <entry key="database">fra_db</entry>
+    <entry key="user">fra_user</entry>
+    <entry key="passwd">fra_password</entry>
+    <entry key="dbtype">postgis</entry>
+    <entry key="schema">public</entry>
+    <entry key="Expose primary keys">true</entry>
+  </connectionParameters>
+  <dateCreated>2024-01-01T00:00:00.000Z</dateCreated>
+  <dateModified>2024-01-01T00:00:00.000Z</dateModified>
+</dataStore>

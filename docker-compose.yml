@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: fra_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fra_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fra_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fra_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - fra_network
+
+  geoserver:
+    image: kartoza/geoserver:2.22.0
+    container_name: fra_geoserver
+    environment:
+      GEOSERVER_ADMIN_USER: ${GEOSERVER_USER:-admin}
+      GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_PASSWORD:-geoserver}
+      GEOSERVER_ADMIN_EMAIL: admin@fra-webgis.local
+      GEOSERVER_DATA_DIR: /opt/geoserver/data_dir
+    ports:
+      - "8080:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+      - ./gis-server/workspaces:/opt/geoserver/data_dir/workspaces
+    depends_on:
+      - postgres
+    networks:
+      - fra_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: fra_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fra_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fra_backend
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-fra_db}
+      - POSTGRES_USER=${POSTGRES_USER:-fra_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-fra_password}
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - fra_network
+
+  frontend:
+    build:
+      context: ./frontend/webgis
+      dockerfile: Dockerfile
+    container_name: fra_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/webgis:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - REACT_APP_GEOSERVER_URL=http://localhost:8080/geoserver
+    depends_on:
+      - backend
+    networks:
+      - fra_network
+
+volumes:
+  postgres_data:
+  geoserver_data:
+  redis_data:
+
+networks:
+  fra_network:
+    driver: bridge
